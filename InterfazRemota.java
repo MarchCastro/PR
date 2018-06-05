@@ -5,4 +5,5 @@ import java.util.ArrayList;
 public interface InterfazRemota extends Remote {
     //int suma(int a,int b) throws RemoteException;
     ArrayList<String> nombre(String name) throws RemoteException;
+    String archivos(String archivo) throws RemoteException;
 }

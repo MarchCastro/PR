@@ -62,8 +62,10 @@ public class PtoP {
                 //HILOS PARA C/S
                 Hilo objHilo = new Hilo();
                 Hilo1 objHilo1 = new Hilo1();
+                //Hilo2 objHilo2 = new Hilo2();
                 new Thread(objHilo).start();
-                new Thread(objHilo1).start();   
+                new Thread(objHilo1).start();
+                //new Thread(objHilo2).start();
             } catch (Exception e) {
                e.printStackTrace();
             }
@@ -79,7 +81,6 @@ public class PtoP {
             String sDirectorio = "/home/marce/Documents/Redes/TercerParcial/Practica6/Archivos";
             File f = new File(sDirectorio);
             
-            ArrayList <String> nombres_coincidencia = new ArrayList <String>();
             if (f.exists()){ // Directorio existe 
                 File[] ficheros = f.listFiles();
                 if (ficheros == null){
@@ -90,14 +91,14 @@ public class PtoP {
                         for (int j = 0; j < ficheros[x].getName().length(); j++) {
                             if(ficheros[x].getName().charAt(j) == '.'){
                                 String [] sin_fin = ficheros[x].getName().split("\\.");
-                                System.out.println(sin_fin[0] + "  " + sin_fin[1]);
+                                //System.out.println(sin_fin[0] + "  " + sin_fin[1]);
                                 
                                 for (int k = 0; k < sin_fin[0].length(); k++) {
                                     if(sin_fin[0].charAt(k) == '_'){
                                         String [] file_parts = sin_fin[0].split("_");
-                                        System.out.println(file_parts[0] + "  " + file_parts[1]);
+                                        //System.out.println(file_parts[0] + "  " + file_parts[1]);
                                         if(file_parts[0].toLowerCase().compareTo(response.toLowerCase()) == 0 || file_parts[1].toLowerCase().compareTo(response.toLowerCase()) == 0 ){
-                                            nombres_coincidencia.add(ficheros[x].getName());
+                                            lista.nombres_coincidencia.add(ficheros[x].getName());
                                         }
                                     }
                                 }
@@ -109,41 +110,50 @@ public class PtoP {
                 System.out.println("No existe ese directorio :c");
             }
 
-            for (int x = 0; x < nombres_coincidencia.size(); x++) {
-                System.out.println("Archivo existente: "+nombres_coincidencia.get(x));
+            for (int x = 0; x < lista.nombres_coincidencia.size(); x++) {
+                //System.out.println("Archivo existente: "+ lista.nombres_coincidencia.get(x));
                 //return nombres_coincidencia.get(x);
             }
 
             //return name;
-            return nombres_coincidencia;
+            return lista.nombres_coincidencia;
+        }
+
+        public String archivos(String archivo) {
+            System.out.println("Pide archivo: "+archivo);
+            return archivo;
         }
 
         @Override
         public void run(){
-            try {
-                java.rmi.registry.LocateRegistry.createRegistry(1099); //puerto default del rmiregistry
-                System.out.println("Puerto local "+ host_local);
-                System.setProperty("java.rmi.server.hostname", host_local);
-                System.out.println("RMI registry ready.");
-             } catch (Exception e) {
-                System.out.println("Exception starting RMI registry:");
-                e.printStackTrace();
-             }//catch
+            int cont = 0;
+            //while(cont <= 10){
+                try {
+                    java.rmi.registry.LocateRegistry.createRegistry(1099); //puerto default del rmiregistry
+                    System.out.println("Puerto local "+ host_local);
+                    System.setProperty("java.rmi.server.hostname", host_local);
+                    System.out.println("RMI registry ready.");
+                 } catch (Exception e) {
+                    System.out.println("Exception starting RMI registry:");
+                    e.printStackTrace();
+                 }//catch
+               
+               try {
+                   System.setProperty("java.rmi.server.codebase","file:///home/marce/Documents/Redes/TercerParcial/Practica6/");
+                   Hilo obj = new Hilo();
+                   InterfazRemota stub = (InterfazRemota) UnicastRemoteObject.exportObject(obj, 0);
            
-           try {
-               System.setProperty("java.rmi.server.codebase","file:///home/marce/Documents/Redes/TercerParcial/Practica6/");
-               Hilo obj = new Hilo();
-               InterfazRemota stub = (InterfazRemota) UnicastRemoteObject.exportObject(obj, 0);
-       
-               // Bind the remote object's stub in the registry
-               Registry registry = LocateRegistry.getRegistry();
-               registry.bind("InterfazRemota", stub);
-       
-               System.err.println("Servidor listo...");
-           } catch (Exception e) {
-               System.err.println("Server exception: " + e.toString());
-               e.printStackTrace();
-           }
+                   // Bind the remote object's stub in the registry
+                   Registry registry = LocateRegistry.getRegistry();
+                   registry.bind("InterfazRemota", stub);
+           
+                   System.err.println("Servidor listo...");
+               } catch (Exception e) {
+                   System.err.println("Server exception: " + e.toString());
+                   e.printStackTrace();
+               }
+            //   cont++;
+            //}
         }
     }
 
@@ -159,77 +169,33 @@ public class PtoP {
                     //if(host.compareTo(host_local) == 0){
                       //  System.out.println("No busco en mis propios archivos >:C");
                     //}else{
-                        try{
-                            Registry registry = LocateRegistry.getRegistry(host);	
-                            InterfazRemota stub = (InterfazRemota) registry.lookup("InterfazRemota");
-                            ArrayList<String> response = stub.nombre(buscador);
-                            System.out.println(host + ":  responde  : " + response);
-                        }catch(Exception e){
-                            System.out.println("No esta vivo el servidor :C");
-                        }
-                    //}
-                }
-
-                /*for (int i = 65; i < 69; i++) {
-                    host = "192.168.1."+i;
-                    //host = "10.100.68.1"+i;
-                    if(host.compareTo(host_local) == 0){
-                        System.out.println("No busco en mis propios archivos >:C");
-                    }else{
-                        try {
-                            //System.out.println(host);
-                            Registry registry = LocateRegistry.getRegistry(host);	
-                            //LocateRegistry.getRegistry(host, 1099);//
-                            //tambien puedes usar getRegistry(String host, int port)
-                            
-                            InterfazRemota stub = (InterfazRemota) registry.lookup("InterfazRemota");
-                            //int x=5,y=4;                        
-                            String response = stub.nombre(buscador);
-                            System.out.println(host + ":  responde  : " + response);
-    
-                            //Enlisto archivos del fichero
-                            String sDirectorio = "/home/marce/Documents/Redes/TercerParcial/Practica6/Archivos";
-                            File f = new File(sDirectorio);
-                            
-                            ArrayList <String> nombres_coincidencia = new ArrayList <String>();
-                            if (f.exists()){ // Directorio existe 
-                                File[] ficheros = f.listFiles();
-                                if (ficheros == null){
-                                    System.out.println("No hay ficheros en el directorio especificado");
-                                }else { 
-                                    for (int x=0;x<ficheros.length;x++){
-                                      //System.out.println(ficheros[x].getName());
-                                        for (int j = 0; j < ficheros[x].getName().length(); j++) {
-                                            if(ficheros[x].getName().charAt(j) == '.'){
-                                                String [] sin_fin = ficheros[x].getName().split("\\.");
-                                                //System.out.println(sin_fin[0] + "  " + sin_fin[1]);
-                                                
-                                                for (int k = 0; k < sin_fin[0].length(); k++) {
-                                                    if(sin_fin[0].charAt(k) == '_'){
-                                                        String [] file_parts = sin_fin[0].split("_");
-                                                        //System.out.println(file_parts[0] + "  " + file_parts[1]);
-                                                        if(file_parts[0].toLowerCase().compareTo(response.toLowerCase()) == 0 || file_parts[1].toLowerCase().compareTo(response.toLowerCase()) == 0 ){
-                                                            nombres_coincidencia.add(ficheros[x].getName());
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
+                    try{
+                        Registry registry = LocateRegistry.getRegistry(host);	
+                        InterfazRemota stub = (InterfazRemota) registry.lookup("InterfazRemota");
+                        ArrayList<String> response = stub.nombre(buscador);
+                        System.out.println(host + ":  responde  : " + response);
+                        ArrayList<String> temp = new ArrayList<String>();
+                        if(host.compareTo(host_local) != 0){
+                            //for(int x = 0; x < lista.nombres_coincidencia.size(); x++){
+                            for (int y = 0; y < response.size(); y++) {
+                                if(lista.nombres_coincidencia.contains(response.get(y))){
+                                    System.out.println("Ya existe: "+response.get(y));
+                                }else{
+                                    temp.add(response.get(y));
                                 }
-                            }else{
-                                System.out.println("No existe ese directorio :c");
                             }
-    
-                            for (int x = 0; x < nombres_coincidencia.size(); x++) {
-                                System.out.println("Archivo existente: "+nombres_coincidencia.get(x));
-                            }
-                            
-                        } catch (Exception e) {
-                            System.out.println(host+" no está vivo x_x");
                         }
+
+                        for(int j = 0; j < temp.size(); j++){
+                            System.out.println("TEMP: "+temp.get(j)); 
+                            //InterfazRemota stub1 = (InterfazRemota) registry.lookup("InterfazRemota");
+                            //String archivo = stub.archivos(temp.get(j));  
+                            //System.out.println(host + ":  responde  : " + archivo); 
+                        }
+                    }catch(Exception e){
+                        System.out.println(host+" no está vivo x_x");
                     }
-                }*/
+                }
             } catch (Exception e) {
                 System.err.println("Client exception: " + e.toString());
                 e.printStackTrace();
@@ -239,6 +205,7 @@ public class PtoP {
 
     class getLista{
         public volatile ArrayList<String> ip_activa = new ArrayList<String>();
+        public volatile ArrayList<String> nombres_coincidencia = new ArrayList<String>();
     }
 
     private void test() {
