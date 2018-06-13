@@ -22,6 +22,7 @@ public class PtoP {
     String host_local = "";
     final getLista lista = new getLista();
     String buscador = "";
+    int flag = 0;
 
     static String displayInterfaceInformation(NetworkInterface netint) throws SocketException {
         Enumeration<InetAddress> inetAddresses = netint.getInetAddresses();
@@ -63,9 +64,11 @@ public class PtoP {
                 Hilo objHilo = new Hilo();
                 Hilo1 objHilo1 = new Hilo1();
                 //Hilo2 objHilo2 = new Hilo2();
+                Hilo3 objHilo3 = new Hilo3();
                 new Thread(objHilo).start();
                 new Thread(objHilo1).start();
                 //new Thread(objHilo2).start();
+                new Thread(objHilo3).start();
             } catch (Exception e) {
                e.printStackTrace();
             }
@@ -78,7 +81,7 @@ public class PtoP {
         public ArrayList <String> nombre(String response) {
 
             //Enlisto archivos del fichero
-            String sDirectorio = "/home/marce/Documents/Redes/TercerParcial/Practica6/Archivos";
+            String sDirectorio = "/home/marce/Documents/Redes/TercerParcial/Practica/Archivos";
             File f = new File(sDirectorio);
             
             if (f.exists()){ // Directorio existe 
@@ -121,39 +124,83 @@ public class PtoP {
 
         public String archivos(String archivo) {
             System.out.println("Pide archivo: "+archivo);
+            flag = 1;
+            //ENVIO ARCHIVO
+            try{
+                String dst = "127.0.0.1";
+                int pto = 7000;
+                //JFileChooser jf = new JFileChooser();
+                //int r = jf.showOpenDialog(null);
+                //System.out.println("R. "+ r );
+                int porcentaje = 0;
+                int n = 0;
+                //if(n == JFileChooser.APPROVE_OPTION){
+                    File f = new File("/home/march/Downloads/P6/Archivos/"+archivo);
+                    String path = f.getAbsolutePath();
+                    String nombre = f.getName();
+                    long tam = f.length();
+                    Socket cl = new Socket(dst,pto);
+                    System.out.println("Conexion establecida ... iniciando envío del archivo" + nombre + "\n\n");
+                    long enviados = 0;
+                    byte [] b = new byte [1500];
+                    //Uso Data porque voy a mandar diferentes tipos de datos, si es puro texto es Print y si es bytes es Buffer
+                    DataOutputStream dos = new DataOutputStream(cl.getOutputStream());
+                    DataInputStream dis = new DataInputStream(new FileInputStream(path));
+                    dos.writeUTF(nombre);
+                    dos.flush();
+                    dos.writeLong(tam);
+                    dos.flush();
+    
+                    while(enviados < tam){
+                        n = dis.read(b);
+                        dos.write(b,0,n);
+                        enviados += n;
+                        porcentaje = (int)((enviados * 100)/tam);
+                        System.out.println("\r Se ha enviado el " + porcentaje + "% del archivo");
+                    }
+    
+                    System.out.println("\n Se ha completado el envio");
+                    dis.close();
+                    dos.close();
+                    cl.close();
+               // }
+            }catch(Exception e){
+                e.printStackTrace();
+            }
+
             return archivo;
         }
 
         @Override
         public void run(){
-            int cont = 0;
-            //while(cont <= 10){
+            for(;;){
+
                 try {
                     java.rmi.registry.LocateRegistry.createRegistry(1099); //puerto default del rmiregistry
                     System.out.println("Puerto local "+ host_local);
                     System.setProperty("java.rmi.server.hostname", host_local);
                     System.out.println("RMI registry ready.");
-                 } catch (Exception e) {
-                    System.out.println("Exception starting RMI registry:");
-                    e.printStackTrace();
-                 }//catch
-               
-               try {
-                   System.setProperty("java.rmi.server.codebase","file:///home/marce/Documents/Redes/TercerParcial/Practica6/");
-                   Hilo obj = new Hilo();
-                   InterfazRemota stub = (InterfazRemota) UnicastRemoteObject.exportObject(obj, 0);
-           
-                   // Bind the remote object's stub in the registry
-                   Registry registry = LocateRegistry.getRegistry();
-                   registry.bind("InterfazRemota", stub);
-           
-                   System.err.println("Servidor listo...");
-               } catch (Exception e) {
-                   System.err.println("Server exception: " + e.toString());
-                   e.printStackTrace();
-               }
-            //   cont++;
-            //}
+                } catch (Exception e) {
+                    //System.out.println("Exception starting RMI registry:");
+                    //e.printStackTrace();
+                }//catch
+                
+                try {
+                System.setProperty("java.rmi.server.codebase","file:///home/marce/Documents/Redes/TercerParcial/Practica/");
+                    Hilo obj = new Hilo();
+                    InterfazRemota stub = (InterfazRemota) UnicastRemoteObject.exportObject(obj, 0);
+            
+                    // Bind the remote object's stub in the registry
+                    Registry registry = LocateRegistry.getRegistry();
+                    registry.bind("InterfazRemota", stub);
+            
+                    System.err.println("Servidor listo...");
+                } catch (Exception e) {
+                    //System.err.println("Server exception: " + e.toString());
+                    //e.printStackTrace();
+                }
+            }
+            
         }
     }
 
@@ -162,10 +209,10 @@ public class PtoP {
         public void run(){
             String host;
             try {
-                                
+                ArrayList<String> temp = new ArrayList<String>();                
                 for (int i = 65; i < 69; i++) {
-                    host = "192.168.1."+i;
-                    //host = "10.100.68.1"+i;
+                    //host = "192.168.1."+i;
+                    host = "10.100.68.1"+i;
                     //if(host.compareTo(host_local) == 0){
                       //  System.out.println("No busco en mis propios archivos >:C");
                     //}else{
@@ -174,7 +221,7 @@ public class PtoP {
                         InterfazRemota stub = (InterfazRemota) registry.lookup("InterfazRemota");
                         ArrayList<String> response = stub.nombre(buscador);
                         System.out.println(host + ":  responde  : " + response);
-                        ArrayList<String> temp = new ArrayList<String>();
+                        
                         if(host.compareTo(host_local) != 0){
                             //for(int x = 0; x < lista.nombres_coincidencia.size(); x++){
                             for (int y = 0; y < response.size(); y++) {
@@ -186,12 +233,7 @@ public class PtoP {
                             }
                         }
 
-                        for(int j = 0; j < temp.size(); j++){
-                            System.out.println("TEMP: "+temp.get(j)); 
-                            //InterfazRemota stub1 = (InterfazRemota) registry.lookup("InterfazRemota");
-                            //String archivo = stub.archivos(temp.get(j));  
-                            //System.out.println(host + ":  responde  : " + archivo); 
-                        }
+                        
                     }catch(Exception e){
                         System.out.println(host+" no está vivo x_x");
                     }
@@ -201,6 +243,47 @@ public class PtoP {
                 e.printStackTrace();
             }
         }    
+    }
+
+    class Hilo3 implements Runnable{
+        @Override
+        public void run(){
+            if(flag == 1){
+                try{
+                    int pto = 7000;
+                    ServerSocket s = new ServerSocket(pto);
+                    System.out.println("Servidor iniciado, esperando archivos...");
+                    for(;;){
+                        Socket cl = s.accept();
+                        DataInputStream dis = new DataInputStream(cl.getInputStream());
+                        String nombre = dis.readUTF();
+                        long tam = dis.readLong();
+                        
+                        System.out.println("Inicia recepción del archivo: " + nombre + " de tamaño " + tam + " desde " + cl.getInetAddress() + ":" + cl.getPort());
+                        DataOutputStream dos = new DataOutputStream(new FileOutputStream(nombre));
+                        long recibidos = 0;
+                        int n,porcentaje = 0;
+                        
+                        while(recibidos < tam){
+                            byte [] b = new byte[1500];
+                            n = dis.read(b);
+                            recibidos += n;
+                            dos.write(b,0,n);
+                            dos.flush();
+                            porcentaje = (int)((recibidos * 100)/tam);
+                            System.out.println("\r Recibido el " + porcentaje + "% del archivo");
+                        }
+        
+                        System.out.println("Archivo recibido");
+                        dos.close();
+                        dis.close();
+                        cl.close();
+                    }
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     class getLista{
